@@ -57,6 +57,11 @@ static void MX_USART2_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+int Version = 3;
+int Should_Flickering = 0;
+int B1_CurrentState = 0;
+int B1_PreviousState = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -98,7 +103,31 @@ int main(void)
     while (1)
     {
         /* USER CODE END WHILE */
-
+        switch (Version)
+        {
+        case 1:
+            if (!HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin))
+            {
+                HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
+                HAL_Delay(500);
+                HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
+                HAL_Delay(500);
+            }
+            break;
+        case 2:
+            B1_CurrentState = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
+            // Falling Edge Detection
+            if (!B1_CurrentState && B1_CurrentState != B1_PreviousState)
+            {
+                Should_Flickering = 1 - Should_Flickering;
+            }
+            B1_PreviousState = B1_CurrentState;
+        }
+        if (Should_Flickering)
+        {
+            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+            HAL_Delay(500);
+        }
         /* USER CODE BEGIN 3 */
     }
     /* USER CODE END 3 */
@@ -230,6 +259,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    switch (Version)
+    {
+    case 3:
+        if (GPIO_Pin == B1_Pin)
+        {
+            Should_Flickering = 1 - Should_Flickering;
+        }
+        break;
+    }
+}
 
 /* USER CODE END 4 */
 
